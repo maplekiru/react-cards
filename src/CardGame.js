@@ -4,28 +4,33 @@ import axios from 'axios'
 
 const DECK_API_URL = 'https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1';
 const API_CARD_DRAW_URL = 'https://deckofcardsapi.com/api/deck/';
-
+// Make one const base URL
 
 /**
  * CardGame
  * 
  * Props: None
  * State: 
- *  - [{cardData: img, id}...]
+ *  - cardsData [{img, id}...]
+ *  - deckID
+ *  - isDrawing
+ *  - isShuffling
  * 
  * App --> CardGame --> Card
  */
 
+// think about changing name to make clear its a deck
 function CardGame() {
   const [deckId, setDeckId] = useState(null);
-  const [cardData, setCardData] = useState([]);
+  const [cardsData, setCardsData] = useState([]); // update to cards
   const [isDrawing, setIsDrawing] = useState(false);
+  const [isShuffling, setIsShuffling] = useState(false);
   console.log("page set and rendered");
-  
-  
+
+
   /**
    * On 1st Render get deckId from API and set state deckId
-   */ 
+   */
 
   useEffect(function getDeckIdOnLoad() {
     async function getDeckId() {
@@ -38,47 +43,69 @@ function CardGame() {
   }, []);
 
 
-  // when isDrawing changes , pull one card from API and add 
-  // it to cardData State
+  /** when isDrawing is true, pull one card from API and add
+   * it to cardsData State */
   useEffect(function fetchCardOnClick() {
     async function getCard() {
       const resp = await axios.get(`${API_CARD_DRAW_URL}/${deckId}/draw`);
-      console.log(resp.data);
       const card = resp.data.cards[0];
-      setCardData(cardData => [...cardData, card]);
-      console.log("Changing is Drawing state,", isDrawing)
-      // setIsDrawing(false);
+      setCardsData(cardsData => [...cardsData, card]);
+      setIsDrawing(false);
+      console.log(card)
     }
-    if (deckId) {
+    if (isDrawing) {
       getCard()
     };
-  }, [isDrawing]);
+  }, [isDrawing, deckId]);
+
+  /** when isShuffling is true, shuffle deck from API reset cardsData */
+   useEffect(function fetchShuffleDeck() {
+    async function getShuffle() {
+      await axios.get(`${API_CARD_DRAW_URL}/${deckId}/shuffle`);
+      setCardsData([]);
+      setIsShuffling(false);
+    }
+
+    if (isShuffling) {
+      getShuffle()
+    };
+  }, [isShuffling, deckId]);
 
   /**
-   * On button click draws card from API and ...
+   * On button click draws card from API
    */
   function drawCard(evt) {
-    setIsDrawing(!isDrawing);
-  }
-  
-  
-  
-  const cardImages = cardData.map((c, idx) => <Card key={c.code} code={c.code} img={c.images.png} zIdx={idx}/>)
-  
-  // this is a filler 
-  if(cardData.length > 51){
-    return <h1>LOSER!</h1>
+    setIsDrawing(true);
   }
 
+  /**
+   * On button click shuffles deck from API
+   */
+   function shuffleDeck(evt) {
+    setIsShuffling(true);
+  }
+
+
+  // maps Card Elements to render //make name cardElems
+  const cards = cardsData.map((c, idx) => 
+  <Card key={c.code} code={c.code} img={c.images.png} zIdx={idx} />)
+
+  // condition to check if all the cards have been drawn
+  if (cardsData.length === 52) {
+    return <h1>LOSER!</h1>
+  }
+  
   return (
     <div>
-      {/*  shouldn't be able to draw card while loading */}
-      
-      <button onClick={drawCard}> Draw Card </button> :
-      
-      <div style={{display:"flex", justifyContent:"center"}}>
-      {cardImages}
+        <button onClick={drawCard} disabled={isDrawing}> Draw Card </button> 
+      <button onClick={shuffleDeck} disabled={isShuffling}> ShuffleDeck </button>
+
+
+      <div style={{ display: "flex", justifyContent: "center" }}>
+        {cards}
       </div>
+
+    
 
     </div>
   )

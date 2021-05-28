@@ -4,7 +4,7 @@ import React from 'react'
  * Props :
  *  code
  *  img 
- * 
+ *  zIndex
  */
 
 function Card({code, img, zIdx}){
